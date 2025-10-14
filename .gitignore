@@ -1,0 +1,10 @@
+python_test.py 
+venv/
+frl_server/accounts/__pycache__
+frl_server/accounts/migrations/
+frl_server/federated/__pycache__
+frl_server/federated/migrations/
+frl_server/frl_server/__pycache__
+frl_server/monitoring/__pycache__
+frl_server/monitoring/migrations/
+frl_server/db.sqlite3
