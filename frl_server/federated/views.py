@@ -94,7 +94,7 @@ class AggregateQTablesView(APIView):
     """
     Admin-only endpoint to aggregate all client Q-tables (no run filter).
     """
-    # permission_classes = [IsAuthenticated, IsAdminUser]
+    permission_classes = [IsAuthenticated]
 
     def post(self, request, *args, **kwargs):
         # Fetch all client Q-tables
@@ -374,7 +374,7 @@ class ClientQTableListView(generics.ListAPIView):
     """
     queryset = ClientQTable.objects.all().order_by("-uploaded_at")
     serializer_class = ClientQTableSerializer
-    permission_classes = [AllowAny]  # Only admins can see
+    permission_classes = [IsAuthenticated]  # Only admins can see
 
 
 
@@ -384,13 +384,13 @@ class GlobalQTableListView(generics.ListAPIView):
     """
     queryset = GlobalQTable.objects.all().order_by("-aggregated_at")  # latest first
     serializer_class = GlobalQTableSerializer
-    permission_classes = [AllowAny]  # only admin can access
+    permission_classes = [IsAuthenticated]  # only admin can access
 
 
 class TestResultListView(generics.ListAPIView):
     queryset = TestResult.objects.all().order_by("-uploaded_at")
     serializer_class = TestResultSerializer
-    permission_classes = [AllowAny]
+    permission_classes = [IsAuthenticated]
 
 
 class EvaluateAllGlobalQTablesView(APIView):
@@ -398,7 +398,7 @@ class EvaluateAllGlobalQTablesView(APIView):
     Simulate car testing for ALL GlobalQTable entries and update each one's performance_score.
     No GPIO — purely simulated environment.
     """
-    permission_classes = [AllowAny]
+    permission_classes = [IsAuthenticated]
 
     def post(self, request, *args, **kwargs):
         try:
@@ -474,16 +474,16 @@ class EvaluateAllGlobalQTablesView(APIView):
 class FederatedRunListView(generics.ListAPIView):
     queryset = FederatedRun.objects.all().order_by("-started_at")
     serializer_class = FederatedRunSerializer
-    permission_classes = [AllowAny]
+    permission_classes = [IsAuthenticated]
 
 
 class ClientEventLogListView(generics.ListAPIView):
     queryset = ClientEventLog.objects.all().order_by("-timestamp")
     serializer_class = ClientEventLogSerializer
-    permission_classes = [AllowAny]
+    permission_classes = [IsAuthenticated]
 
 class FederatedSummaryCountView(APIView):
-    permission_classes = [AllowAny]
+    permission_classes = [IsAuthenticated]
 
     def get(self, request):
         data = {
@@ -493,3 +493,56 @@ class FederatedSummaryCountView(APIView):
             "test_results": TestResult.objects.count(),
         }
         return Response(data, status=status.HTTP_200_OK)
+    
+
+class DeleteAllFederatedDataView(APIView):
+    """
+    Deletes all entries from TestResult, ClientEventLog, FederatedRun, and ClientQTable.
+    Use carefully — this is a full cleanup endpoint.
+    """
+    permission_classes = [IsAuthenticated]  # You can change to IsAdminUser for safety
+
+    def delete(self, request, *args, **kwargs):
+        try:
+            test_count = TestResult.objects.count()
+            event_count = ClientEventLog.objects.count()
+            run_count = FederatedRun.objects.count()
+            qtable_count = ClientQTable.objects.count()
+
+            # Delete all entries
+            TestResult.objects.all().delete()
+            ClientEventLog.objects.all().delete()
+            ClientQTable.objects.all().delete()
+            FederatedRun.objects.all().delete()
+
+            return Response({
+                "message": "✅ All federated data deleted successfully",
+                "deleted_counts": {
+                    "TestResult": test_count,
+                    "ClientEventLog": event_count,
+                    "ClientQTable": qtable_count,
+                    "FederatedRun": run_count
+                }
+            }, status=status.HTTP_200_OK)
+
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+class DeleteAllGlobalQTableView(APIView):
+    """
+    Deletes all entries from GlobalQTable model.
+    """
+    permission_classes = [IsAuthenticated]  # change to IsAdminUser for safety
+
+    def delete(self, request, *args, **kwargs):
+        try:
+            count = GlobalQTable.objects.count()
+            GlobalQTable.objects.all().delete()
+
+            return Response({
+                "message": "✅ All Global Q-Table entries deleted successfully",
+                "deleted_count": count
+            }, status=status.HTTP_200_OK)
+
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

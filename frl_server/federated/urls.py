@@ -24,6 +24,7 @@ urlpatterns = [
     path("runs/", FederatedRunListView.as_view(), name="federated-run-list"),
     path("events/", ClientEventLogListView.as_view(), name="client-event-log-list"),
     path("summary/counts/", FederatedSummaryCountView.as_view(), name="federated-summary-counts"),
-
+    path("cleanup/delete_all/", DeleteAllFederatedDataView.as_view(), name="delete-all-federated-data"),
+    path("cleanup/delete_global_qtables/", DeleteAllGlobalQTableView.as_view(), name="delete-all-global-qtables"),
 
 ]
